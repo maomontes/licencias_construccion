@@ -1,0 +1,74 @@
+---
+title: "Licencias_Constru"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggrepel)
+
+df <- read_csv("Licencias_de_Construcci_n.csv")
+
+theme_set(theme_bw())
+
+manizales <- df %>%
+  mutate(Departamento = case_when(Departamento == 17 ~ "Caldas"),
+         Municipio = case_when(Municipio == 17001 ~ "Manizales")) %>% 
+  filter(Departamento == "Caldas", Municipio == "Manizales")
+```
+
+```{r}
+options(scipen = 999, digits = 2)
+
+mzl_tot <- manizales %>% 
+  group_by(Año) %>% 
+  summarise(sum_tot = sum(Total, na.rm = TRUE),
+            sum_viv = sum(Vivienda, na.rm = TRUE),
+            sum_com = sum(Comercio, na.rm = TRUE),
+            sum_ind = sum(Industria, na.rm = TRUE),
+            sum_rel = sum(Religioso, na.rm = TRUE),
+            sum_vis = sum(Area_vis, na.rm = TRUE),
+            sum_ofi = sum(Oficina, na.rm = TRUE),
+            avg_viv = mean(Vivienda, na.rm = TRUE))
+  # mutate(per_viv = (sum_viv / sum_tot) * 100,
+  #        per_com = (sum_com / sum_tot) * 100,
+  #        per_ind = (sum_ind / sum_tot) * 100,
+  #        per_rel = (sum_rel / sum_tot) * 100) 
+  # ungroup() %>% 
+  # ggplot(aes(Año, sum_viv)) +
+  # geom_line() +
+  # geom_point(aes(group = Año)) +
+  # scale_x_continuous(breaks = seq(2007, 2020, 1))
+
+mzl_lon <- mzl_tot %>%
+  pivot_longer(!Año, names_to = "sum_totales", values_to ="Cantidad")
+
+mzl_lon %>%
+  filter(!Año == 2020, sum_totales == "sum_tot" ) %>%
+  ggplot(aes(Año, Cantidad)) +
+  geom_line(aes(group = sum_totales)) +
+  geom_point() +
+  geom_text_repel(aes(label = Cantidad)) +
+  scale_x_continuous(breaks = seq(2007, 2020, 1))
+
+mzl_lon %>%
+  filter(sum_totales == "avg_viv", Año != 2020) %>%
+  ggplot(aes(Año, Cantidad)) +
+  geom_line(aes(group = sum_totales)) +
+  geom_point() +
+  geom_text_repel(aes(label = Cantidad)) +
+  scale_x_continuous(breaks = seq(2007, 2020, 1))
+
+
+mzl_lon %>% 
+  group_by(Año) %>% 
+  summarise(avg_sum = mean(Cantidad)) %>% 
+  ungroup() %>% 
+  ggplot(aes(Año, avg_sum)) +
+  geom_col()
+```
+
